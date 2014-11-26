@@ -20,6 +20,9 @@ namespace Tetris
         private const int GRID_WIDTH = 10;
         private const int GRID_HEIGHT = 22;
         private const int GRID_HIDDEN_ROWS = 2;
+        private const int SCOREBOARD_SIZE = 200;
+        private const int NEXT_OFFSET_X = 11;
+        private const int NEXT_OFFSET_Y = 2;
 
         int dropTimer = 0;
         static int level = 1;
@@ -35,6 +38,7 @@ namespace Tetris
         List<Block> deadBlockList = new List<Block>();
         List<Block> activeBlockList = new List<Block>();
         List<int> rowsToClear = new List<int>();
+        List<Block> nextBlockList = new List<Block>();
 
         bool enterPressed = false;
         bool rotateRightPressed = false;
@@ -48,7 +52,7 @@ namespace Tetris
         {
             graphics = new GraphicsDeviceManager(this);
             graphics.PreferredBackBufferHeight = BLOCK_SIZE * GRID_HEIGHT;
-            graphics.PreferredBackBufferWidth = BLOCK_SIZE * GRID_WIDTH;
+            graphics.PreferredBackBufferWidth = BLOCK_SIZE * GRID_WIDTH + SCOREBOARD_SIZE;
             Content.RootDirectory = "Content";
         }
 
@@ -219,7 +223,7 @@ namespace Tetris
             {
                 doneFlash = true;
             }
-
+            getNext();
             
 
             base.Update(gameTime);
@@ -241,7 +245,14 @@ namespace Tetris
             {
                 b.Draw(spriteBatch);
             }
+            foreach (Block b in nextBlockList)
+            {
+                b.Draw(spriteBatch);
+            }
             spriteBatch.End();
+           
+
+
             // TODO: Add your drawing code here
 
             base.Draw(gameTime);
@@ -333,6 +344,22 @@ namespace Tetris
                     }
                 }
             }
+        }
+
+        private void getNext()
+        {
+            nextBlockList.Clear();
+            Color blockColor=Color.White;
+            foreach (Pair<int> p in Tetromino.PreviewNext(ref blockColor))
+            {
+                    Block b = new Block(Content, BLOCK_SIZE);
+                    b.PositionX = p.First + NEXT_OFFSET_X;
+                    b.PositionY = p.Second + NEXT_OFFSET_Y;
+                    b.Colour = blockColor;
+                    nextBlockList.Add(b);
+                    
+            }
+            Console.WriteLine(nextBlockList[0].PositionX + " " + nextBlockList[0].PositionY);
         }
 
 

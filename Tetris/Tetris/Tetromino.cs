@@ -40,6 +40,26 @@ namespace Tetris
             FailTranslate
         }
 
+        private static Dictionary<Type, Color> colours = new Dictionary<Type, Color>() {
+            {Type.L, Color.Orange},
+            {Type.J, Color.Blue},
+            {Type.I, Color.Cyan},
+            {Type.T, Color.Purple},
+            {Type.O, Color.Yellow},
+            {Type.S, Color.Green},
+            {Type.Z, Color.Red}
+        };
+
+        private static Dictionary<Type, Tuple<int, int>> startPositions = new Dictionary<Type, Tuple<int, int>>(){
+            {Type.L, Tuple.Create(2,0)},
+            {Type.J, Tuple.Create(2,0)},
+            {Type.I, Tuple.Create(3,0)},
+            {Type.T, Tuple.Create(2,0)},
+            {Type.O, Tuple.Create(4,0)},
+            {Type.S, Tuple.Create(2,0)},
+            {Type.Z, Tuple.Create(2,0)}
+        };
+
         private static Queue<Type> nextT = new Queue<Type>();
 
         // 
@@ -61,7 +81,7 @@ namespace Tetris
                 InitQueue();
             }
             this.type = GetNext();
-            positions = AssignStartPosition();
+            positions = AssignStartPosition(type, ref colour);
         }
 
         /// <summary>
@@ -94,9 +114,14 @@ namespace Tetris
         /// Previews the type of the upcoming tetromino
         /// </summary>
         /// <returns>The type of the next tetromino in the queue</returns>
-        public static Type PeekNext()
+        private static Type PeekNext()
         {
             return nextT.Peek();
+        }
+
+        public static List<Pair<int>> PreviewNext(ref Color col)
+        {
+            return AssignStartPosition(PeekNext(), ref col);
         }
 
         public Type TetrominoType
@@ -141,50 +166,32 @@ namespace Tetris
         /// Sets the starting position of the active tetromino, based on its type.
         /// </summary>
         /// <returns>The locations of each tile in the tetromino.</returns>
-        private List<Pair<int>> AssignStartPosition()
+        private static List<Pair<int>> AssignStartPosition(Type type, ref Color col)
         {
+            colours.TryGetValue(type, out col);
+            
+            
             switch (type)
             {
                 case Type.L:
-                    colour = Color.Orange;
-                    XPosition = 2;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int>(0, 1), new Pair<int>(1, 1), new Pair<int>(2, 1), new Pair<int>(2, 0) };
                     
                 case Type.J:
-                    colour = Color.Blue;
-                    XPosition = 2;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int>(0, 1), new Pair<int>(1, 1), new Pair<int>(2, 1), new Pair<int>(0, 0) };
                    
                 case Type.I:
-                    colour = Color.Cyan;
-                    XPosition = 3;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int> (0, 1), new Pair<int>(1, 1), new Pair<int>(2, 1), new Pair<int>(3, 1) };
                     
                 case Type.T:
-                    colour = Color.Purple;
-                    XPosition = 2;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int>(0, 1), new Pair<int>(1, 1), new Pair<int>(2, 1), new Pair<int>(1, 0) };
                     
                 case Type.O:
-                    colour = Color.Yellow;
-                    XPosition = 4;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int>(0, 1), new Pair<int>(1, 1), new Pair<int>(0, 0), new Pair<int>(1, 0) };
                     
                 case Type.S:
-                    colour = Color.Green;
-                    XPosition = 2;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int>(0, 1), new Pair<int>(1, 1), new Pair<int>(1, 0), new Pair<int>(2, 0) };
                     
                 case Type.Z:
-                    colour = Color.Red;
-                    XPosition = 2;
-                    YPosition = 0;
                     return new List<Pair<int>>() { new Pair<int>(1, 1), new Pair<int>(2, 1), new Pair<int>(0, 0), new Pair<int>(1, 0) };
                     
                 default:
@@ -395,7 +402,11 @@ namespace Tetris
         {
             tHandler.LockTBlocks();
             type = GetNext();
-            positions = AssignStartPosition();
+            positions = AssignStartPosition(type, ref colour);
+            Tuple<int, int> xy;
+            startPositions.TryGetValue(type, out xy);
+            XPosition = xy.Item1;
+            YPosition = xy.Item2;
             return type;
         }
 
