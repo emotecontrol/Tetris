@@ -25,12 +25,21 @@ namespace Tetris
         private const int NEXT_OFFSET_Y = 2;
 
         int dropTimer = 0;
+        int softDropCount = 0;
         static int level = 1;
-        int dropspeed = 65 - level * 5;
+        static int score = 0;
+        static int linesCleared = 0;
+        int dropspeed = 65 - level * 10;
 
         TimeSpan flashDuration = TimeSpan.FromMilliseconds(500);
         TimeSpan startFlash = TimeSpan.Zero;
         TimeSpan downTimer = TimeSpan.FromMilliseconds(200);
+
+        SpriteFont nextFont;
+        SpriteFont titleFont;
+        Texture2D emptyTexture;
+        Rectangle titleRect;
+        Rectangle lineRect;
 
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
@@ -46,8 +55,10 @@ namespace Tetris
         bool shiftLeftPressed = false;
         bool shiftRightPressed = false;
         bool shiftDownPressed = false;
+        bool levelAddPressed = false;
         bool flashBegun = false;
         bool doneFlash = false;
+        bool isSoftDrop = false;
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -78,9 +89,12 @@ namespace Tetris
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             activeT = new Tetromino(this);
-            
-            
-
+            nextFont = Content.Load<SpriteFont>("next");
+            titleFont = Content.Load<SpriteFont>("title");
+            emptyTexture = new Texture2D(GraphicsDevice, 1, 1);
+            emptyTexture.SetData(new Color[] { Color.White });
+            titleRect = new Rectangle(0, 0, BLOCK_SIZE * GRID_WIDTH, BLOCK_SIZE * 2);
+            lineRect = new Rectangle(BLOCK_SIZE * GRID_WIDTH, 0, 1, BLOCK_SIZE * GRID_HEIGHT);
             // TODO: use this.Content to load your game content here
         }
 
@@ -103,6 +117,7 @@ namespace Tetris
             // Allows the game to exit
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
+            level = linesCleared / 10 + 1;
             if (!flashBegun)
             {
                 
@@ -161,13 +176,25 @@ namespace Tetris
                 if ((keyboard.IsKeyDown(Keys.S) || (gamepad.IsConnected && gamepad.DPad.Down == ButtonState.Pressed)) && !shiftDownPressed)
                 {
                     //if (activeT.TryTranslate(Tetromino.TranslationType.MoveDown))
-                    dropspeed = 10;
+                    dropspeed = dropspeed > 10 ? 10 : dropspeed;
+                    isSoftDrop = true;
                     shiftDownPressed = true;
                 }
                 else if ((keyboard.IsKeyUp(Keys.S) || (gamepad.IsConnected && gamepad.DPad.Down == ButtonState.Released)) && shiftDownPressed)
                 {
                     shiftDownPressed = false;
-                    dropspeed = 65 - level * 5;
+                    isSoftDrop = false;
+                    softDropCount = 0;
+                    dropspeed = 65 - level * 10;
+                }
+                if (keyboard.IsKeyDown(Keys.P) && !levelAddPressed)
+                {
+                    levelAddPressed = true;
+                    linesCleared += 10;
+                }
+                else if (keyboard.IsKeyUp(Keys.P) && levelAddPressed)
+                {
+                    levelAddPressed = false;
                 }
 
                 // check to see if it's time to move the piece down automatically
@@ -175,6 +202,7 @@ namespace Tetris
                 {
                     activeT.TryTranslate(Tetromino.TranslationType.MoveDown);
                     dropTimer = 0;
+                    if (isSoftDrop) softDropCount++;
                 }
             }
             // update the list of active blocks (ones in the current tetromino)
@@ -207,6 +235,12 @@ namespace Tetris
             // if the flash timer has expired, clear the dead rows, reset flags
             if (doneFlash)
             {
+                int rows = rowsToClear.Count;
+                if (rows == 1) score += 40 * level + softDropCount;
+                else if (rows == 2) score += 100 * level + softDropCount;
+                else if (rows == 3) score += 300 * level + softDropCount;
+                else if (rows == 4) score += 1200 * level + softDropCount;
+                linesCleared += rows;
                 
                 ClearRows(rowsToClear);
                 rowsToClear.Clear();
@@ -237,21 +271,45 @@ namespace Tetris
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             spriteBatch.Begin();
+            // draw current tetromino
             foreach (Block b in activeBlockList)
             {
                 b.Draw(spriteBatch);
             }
+            // draw old blocks
             foreach (Block b in deadBlockList)
             {
                 b.Draw(spriteBatch);
             }
+            // draw Next blocks
             foreach (Block b in nextBlockList)
             {
                 b.Draw(spriteBatch);
             }
+            // draw Next text
+            Vector2 nSize = nextFont.MeasureString("NEXT");
+            spriteBatch.DrawString(nextFont, "NEXT", new Vector2(BLOCK_SIZE * 10 + (100-nSize.X/2), 0), Color.Black);
+            
+            // draw title
+            spriteBatch.Draw(emptyTexture, titleRect, Color.Violet);
+            Vector2 tSize = titleFont.MeasureString("TETRIS");
+            spriteBatch.DrawString(titleFont, "TETRIS", new Vector2(titleRect.Width / 2 - tSize.X / 2, titleRect.Height / 2 - tSize.Y / 2), Color.Black);
+            // draw separator
+            spriteBatch.Draw(emptyTexture, lineRect, Color.Black);
+            // draw score
+            Vector2 sSize = nextFont.MeasureString("SCORE");
+            spriteBatch.DrawString(nextFont, "SCORE", new Vector2(BLOCK_SIZE * 10 + (100 - sSize.X / 2), 200), Color.Black);
+            Vector2 scScize = nextFont.MeasureString(score.ToString());
+            spriteBatch.DrawString(nextFont, score.ToString(), new Vector2(BLOCK_SIZE * 10 + (100 - scScize.X / 2), 200 + 50), Color.Black);
+            // draw level
+            Vector2 lSize = nextFont.MeasureString("LEVEL");
+            spriteBatch.DrawString(nextFont, "LEVEL", new Vector2(BLOCK_SIZE * 10 + (100 - lSize.X / 2), 300), Color.Black);
+            Vector2 lcSize = nextFont.MeasureString(level.ToString());
+            spriteBatch.DrawString(nextFont, level.ToString(), new Vector2(BLOCK_SIZE * 10 + (100 - lcSize.X / 2), 300 + 50), Color.Black);
+            
             spriteBatch.End();
            
-
+            
 
             // TODO: Add your drawing code here
 
@@ -352,14 +410,20 @@ namespace Tetris
             Color blockColor=Color.White;
             foreach (Pair<int> p in Tetromino.PreviewNext(ref blockColor))
             {
-                    Block b = new Block(Content, BLOCK_SIZE);
-                    b.PositionX = p.First + NEXT_OFFSET_X;
-                    b.PositionY = p.Second + NEXT_OFFSET_Y;
-                    b.Colour = blockColor;
-                    nextBlockList.Add(b);
+                int typeOffset = 1;
+                Block b = new Block(Content, BLOCK_SIZE);
+                Tetromino.Type t = Tetromino.PeekNext();
+                if (t == Tetromino.Type.I)
+                {
+                    typeOffset = 0;
+                }
+                b.PositionX = p.First + NEXT_OFFSET_X + typeOffset;
+                b.PositionY = p.Second + NEXT_OFFSET_Y;
+                b.Colour = blockColor;
+                nextBlockList.Add(b);
                     
             }
-            Console.WriteLine(nextBlockList[0].PositionX + " " + nextBlockList[0].PositionY);
+            //Console.WriteLine(nextBlockList[0].PositionX + " " + nextBlockList[0].PositionY);
         }
 
 

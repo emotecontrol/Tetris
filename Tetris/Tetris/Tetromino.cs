@@ -114,7 +114,7 @@ namespace Tetris
         /// Previews the type of the upcoming tetromino
         /// </summary>
         /// <returns>The type of the next tetromino in the queue</returns>
-        private static Type PeekNext()
+        public static Type PeekNext()
         {
             return nextT.Peek();
         }
