@@ -71,6 +71,7 @@ namespace Tetris
         {
             bool IsLegalTPosition(List<Pair<int>> l);
             void LockTBlocks();
+            void EndGame();
         }
 
         public Tetromino (THandler tHandler)
@@ -402,11 +403,17 @@ namespace Tetris
         {
             tHandler.LockTBlocks();
             type = GetNext();
-            positions = AssignStartPosition(type, ref colour);
-            Tuple<int, int> xy;
-            startPositions.TryGetValue(type, out xy);
-            XPosition = xy.Item1;
-            YPosition = xy.Item2;
+            Color dummyColour = new Color();
+            bool canAddBlock = tHandler.IsLegalTPosition(AssignStartPosition(type, ref dummyColour));
+            if (!canAddBlock) tHandler.EndGame();
+            else
+            {
+                positions = AssignStartPosition(type, ref colour);
+                Tuple<int, int> xy;
+                startPositions.TryGetValue(type, out xy);
+                XPosition = xy.Item1;
+                YPosition = xy.Item2;
+            }
             return type;
         }
 

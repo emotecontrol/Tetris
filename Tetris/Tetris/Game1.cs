@@ -37,12 +37,16 @@ namespace Tetris
 
         SpriteFont nextFont;
         SpriteFont titleFont;
+        SpriteFont buttonFont;
         Texture2D emptyTexture;
         Rectangle titleRect;
         Rectangle lineRect;
+        MenuButton restartButton;
+        MenuButton beginButton;
 
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        
         Tetromino activeT;
         List<Block> deadBlockList = new List<Block>();
         List<Block> activeBlockList = new List<Block>();
@@ -59,6 +63,8 @@ namespace Tetris
         bool flashBegun = false;
         bool doneFlash = false;
         bool isSoftDrop = false;
+        bool gameOver = false;
+        bool gameStart = false;
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -76,7 +82,7 @@ namespace Tetris
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-
+            this.IsMouseVisible = true;
             base.Initialize();
         }
 
@@ -91,10 +97,26 @@ namespace Tetris
             activeT = new Tetromino(this);
             nextFont = Content.Load<SpriteFont>("next");
             titleFont = Content.Load<SpriteFont>("title");
+            buttonFont = Content.Load<SpriteFont>("button");
             emptyTexture = new Texture2D(GraphicsDevice, 1, 1);
             emptyTexture.SetData(new Color[] { Color.White });
             titleRect = new Rectangle(0, 0, BLOCK_SIZE * GRID_WIDTH, BLOCK_SIZE * 2);
             lineRect = new Rectangle(BLOCK_SIZE * GRID_WIDTH, 0, 1, BLOCK_SIZE * GRID_HEIGHT);
+
+            beginButton = new MenuButton(emptyTexture, emptyTexture, GraphicsDevice);
+            beginButton.setSize(new Vector2(160, 110));
+            beginButton.setPosition(new Vector2((BLOCK_SIZE * 10 / 2 - beginButton.Width / 2), (BLOCK_SIZE * 22 / 2 - beginButton.Height / 2)));
+            beginButton.Colour = Color.Violet;
+            beginButton.SetText("BEGIN", buttonFont, Content);
+            beginButton.activate();
+
+            restartButton = new MenuButton(emptyTexture, emptyTexture, GraphicsDevice);
+            restartButton.setSize(new Vector2(180,110));
+            restartButton.setPosition(new Vector2((BLOCK_SIZE*10 /2 - restartButton.Width/2), (BLOCK_SIZE*22/2 - restartButton.Height/2)));
+            restartButton.Colour = Color.Violet;
+            restartButton.SetText("RESTART", buttonFont, Content);
+            
+
             // TODO: use this.Content to load your game content here
         }
 
@@ -118,147 +140,173 @@ namespace Tetris
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
             level = linesCleared / 10 + 1;
-            if (!flashBegun)
+            if (gameStart)
             {
-                
-                dropTimer++;
-                GamePadState gamepad = GamePad.GetState(PlayerIndex.One);
-
-                KeyboardState keyboard = Keyboard.GetState();
-                if ((keyboard.IsKeyDown(Keys.Enter) || (gamepad.IsConnected && gamepad.Buttons.Start == ButtonState.Pressed)) && !enterPressed)
+                if (!gameOver)
                 {
-                    activeT.LockT();
-                    enterPressed = true;
-                }
-                else if ((keyboard.IsKeyUp(Keys.Enter) || (gamepad.IsConnected && gamepad.Buttons.Start == ButtonState.Released)) && enterPressed)
-                {
-                    enterPressed = false;
-                }
-                if ((keyboard.IsKeyDown(Keys.Right) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Pressed)) && !rotateRightPressed)
-                {
-                    if(activeT.TryTranslate(Tetromino.TranslationType.RotateRight)) dropTimer = 0;
-                    rotateRightPressed = true;
-                }
-                else if ((keyboard.IsKeyUp(Keys.Right) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Released)) && rotateRightPressed)
-                {
-                    rotateRightPressed = false;
-                }
-                if ((keyboard.IsKeyDown(Keys.Left) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Pressed)) && !rotateLeftPressed)
-                {
-                    if(activeT.TryTranslate(Tetromino.TranslationType.RotateLeft)) dropTimer = 0;
-                    rotateLeftPressed = true;
-                }
-                else if ((keyboard.IsKeyUp(Keys.Left) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Released)) && rotateLeftPressed)
-                {
-                    rotateLeftPressed = false;
-                }
-
-                if ((keyboard.IsKeyDown(Keys.A) || (gamepad.IsConnected && gamepad.DPad.Left == ButtonState.Pressed)) && !shiftLeftPressed)
-                {
-                    activeT.TryTranslate(Tetromino.TranslationType.MoveLeft);
-                    shiftLeftPressed = true;
-                }
-                else if ((keyboard.IsKeyUp(Keys.A) || (gamepad.IsConnected && gamepad.DPad.Left == ButtonState.Released)) && shiftLeftPressed)
-                {
-                    shiftLeftPressed = false;
-                }
-
-                if ((keyboard.IsKeyDown(Keys.D) || (gamepad.IsConnected && gamepad.DPad.Right == ButtonState.Pressed)) && !shiftRightPressed)
-                {
-                    activeT.TryTranslate(Tetromino.TranslationType.MoveRight);
-                    shiftRightPressed = true;
-                }
-                else if ((keyboard.IsKeyUp(Keys.D) || (gamepad.IsConnected && gamepad.DPad.Right == ButtonState.Released)) && shiftRightPressed)
-                {
-                    shiftRightPressed = false;
-                }
-
-                if ((keyboard.IsKeyDown(Keys.S) || (gamepad.IsConnected && gamepad.DPad.Down == ButtonState.Pressed)) && !shiftDownPressed)
-                {
-                    //if (activeT.TryTranslate(Tetromino.TranslationType.MoveDown))
-                    dropspeed = dropspeed > 10 ? 10 : dropspeed;
-                    isSoftDrop = true;
-                    shiftDownPressed = true;
-                }
-                else if ((keyboard.IsKeyUp(Keys.S) || (gamepad.IsConnected && gamepad.DPad.Down == ButtonState.Released)) && shiftDownPressed)
-                {
-                    shiftDownPressed = false;
-                    isSoftDrop = false;
-                    softDropCount = 0;
-                    dropspeed = 65 - level * 10;
-                }
-                if (keyboard.IsKeyDown(Keys.P) && !levelAddPressed)
-                {
-                    levelAddPressed = true;
-                    linesCleared += 10;
-                }
-                else if (keyboard.IsKeyUp(Keys.P) && levelAddPressed)
-                {
-                    levelAddPressed = false;
-                }
-
-                // check to see if it's time to move the piece down automatically
-                if (dropTimer >= dropspeed)
-                {
-                    activeT.TryTranslate(Tetromino.TranslationType.MoveDown);
-                    dropTimer = 0;
-                    if (isSoftDrop) softDropCount++;
-                }
-            }
-            // update the list of active blocks (ones in the current tetromino)
-            activeBlockList.Clear();
-            List<Pair<int>> blocks = activeT.GetBlockLocations();
-            foreach (Pair<int> t in blocks)
-            {
-                Block b = new Block(Content, BLOCK_SIZE);
-                b.PositionX = t.First;
-                b.PositionY = t.Second;
-                b.Colour = activeT.Colour;
-                activeBlockList.Add(b);
-            }
-
-            // check to see if any rows are complete.  If so, start the flash timer.
-            if (!flashBegun)
-            {
-                rowsToClear = new List<int>();
-                for (int i = 2; i < GRID_HEIGHT; i++)
-                {
-                    if (deadBlockList.Count<Block>(b => b.PositionY == i) == 10)
+                    if (!flashBegun)
                     {
-                        flashBegun = true;
-                        startFlash = gameTime.TotalGameTime;
-                        rowsToClear.Add(i);
+
+                        dropTimer++;
+                        GamePadState gamepad = GamePad.GetState(PlayerIndex.One);
+
+                        KeyboardState keyboard = Keyboard.GetState();
+                        //if ((keyboard.IsKeyDown(Keys.Enter) || (gamepad.IsConnected && gamepad.Buttons.Start == ButtonState.Pressed)) && !enterPressed)
+                        //{
+                        //    activeT.LockT();
+                        //    enterPressed = true;
+                        //}
+                        //else if ((keyboard.IsKeyUp(Keys.Enter) || (gamepad.IsConnected && gamepad.Buttons.Start == ButtonState.Released)) && enterPressed)
+                        //{
+                        //    enterPressed = false;
+                        //}
+                        if ((keyboard.IsKeyDown(Keys.Right) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Pressed)) && !rotateRightPressed)
+                        {
+                            if (activeT.TryTranslate(Tetromino.TranslationType.RotateRight)) dropTimer = 0;
+                            rotateRightPressed = true;
+                        }
+                        else if ((keyboard.IsKeyUp(Keys.Right) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Released)) && rotateRightPressed)
+                        {
+                            rotateRightPressed = false;
+                        }
+                        if ((keyboard.IsKeyDown(Keys.Left) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Pressed)) && !rotateLeftPressed)
+                        {
+                            if (activeT.TryTranslate(Tetromino.TranslationType.RotateLeft)) dropTimer = 0;
+                            rotateLeftPressed = true;
+                        }
+                        else if ((keyboard.IsKeyUp(Keys.Left) || (gamepad.IsConnected && gamepad.Buttons.LeftShoulder == ButtonState.Released)) && rotateLeftPressed)
+                        {
+                            rotateLeftPressed = false;
+                        }
+
+                        if ((keyboard.IsKeyDown(Keys.A) || (gamepad.IsConnected && gamepad.DPad.Left == ButtonState.Pressed)) && !shiftLeftPressed)
+                        {
+                            activeT.TryTranslate(Tetromino.TranslationType.MoveLeft);
+                            shiftLeftPressed = true;
+                        }
+                        else if ((keyboard.IsKeyUp(Keys.A) || (gamepad.IsConnected && gamepad.DPad.Left == ButtonState.Released)) && shiftLeftPressed)
+                        {
+                            shiftLeftPressed = false;
+                        }
+
+                        if ((keyboard.IsKeyDown(Keys.D) || (gamepad.IsConnected && gamepad.DPad.Right == ButtonState.Pressed)) && !shiftRightPressed)
+                        {
+                            activeT.TryTranslate(Tetromino.TranslationType.MoveRight);
+                            shiftRightPressed = true;
+                        }
+                        else if ((keyboard.IsKeyUp(Keys.D) || (gamepad.IsConnected && gamepad.DPad.Right == ButtonState.Released)) && shiftRightPressed)
+                        {
+                            shiftRightPressed = false;
+                        }
+
+                        if ((keyboard.IsKeyDown(Keys.S) || (gamepad.IsConnected && gamepad.DPad.Down == ButtonState.Pressed)) && !shiftDownPressed)
+                        {
+                            //if (activeT.TryTranslate(Tetromino.TranslationType.MoveDown))
+                            dropspeed = dropspeed > 5 ? 5 : dropspeed;
+                            isSoftDrop = true;
+                            shiftDownPressed = true;
+                        }
+                        else if ((keyboard.IsKeyUp(Keys.S) || (gamepad.IsConnected && gamepad.DPad.Down == ButtonState.Released)) && shiftDownPressed)
+                        {
+                            shiftDownPressed = false;
+                            isSoftDrop = false;
+                            softDropCount = 0;
+                            dropspeed = 65 - level * 10;
+                        }
+                        if (keyboard.IsKeyDown(Keys.P) && !levelAddPressed)
+                        {
+                            levelAddPressed = true;
+                            linesCleared += 10;
+                        }
+                        else if (keyboard.IsKeyUp(Keys.P) && levelAddPressed)
+                        {
+                            levelAddPressed = false;
+                        }
+
+                        // check to see if it's time to move the piece down automatically
+                        if (dropTimer >= dropspeed)
+                        {
+                            activeT.TryTranslate(Tetromino.TranslationType.MoveDown);
+                            dropTimer = 0;
+                            if (isSoftDrop) softDropCount++;
+                        }
+
+
+                    }
+                    // update the list of active blocks (ones in the current tetromino)
+                    activeBlockList.Clear();
+                    List<Pair<int>> blocks = activeT.GetBlockLocations();
+                    foreach (Pair<int> t in blocks)
+                    {
+                        Block b = new Block(Content, BLOCK_SIZE);
+                        b.PositionX = t.First;
+                        b.PositionY = t.Second;
+                        b.Colour = activeT.Colour;
+                        activeBlockList.Add(b);
+                    }
+
+                    // check to see if any rows are complete.  If so, start the flash timer.
+                    if (!flashBegun)
+                    {
+                        rowsToClear = new List<int>();
+                        for (int i = 2; i < GRID_HEIGHT; i++)
+                        {
+                            if (deadBlockList.Count<Block>(b => b.PositionY == i) == 10)
+                            {
+                                flashBegun = true;
+                                startFlash = gameTime.TotalGameTime;
+                                rowsToClear.Add(i);
+                            }
+                        }
+                    }
+
+                    // if the flash timer has expired, clear the dead rows, reset flags
+                    if (doneFlash)
+                    {
+                        int rows = rowsToClear.Count;
+                        if (rows == 1) score += 40 * level + softDropCount;
+                        else if (rows == 2) score += 100 * level + softDropCount;
+                        else if (rows == 3) score += 300 * level + softDropCount;
+                        else if (rows == 4) score += 1200 * level + softDropCount;
+                        linesCleared += rows;
+
+                        ClearRows(rowsToClear);
+                        rowsToClear.Clear();
+                        flashBegun = false;
+                        doneFlash = false;
+                    }
+
+                    // change colour of blocks in dead rows
+                    Flash(rowsToClear);
+
+                    // check to see if flash has begun.  If it has, check to see if flash
+                    // duration has expired.  If it has, declare it done.
+                    if (flashBegun && gameTime.TotalGameTime.Subtract(startFlash) > flashDuration)
+                    {
+                        doneFlash = true;
+                    }
+                    getNext();
+                }
+                else
+                {
+                    MouseState mouse = Mouse.GetState();
+                    restartButton.Update(mouse);
+                    if (restartButton.isClicked)
+                    {
+                        Restart();
                     }
                 }
             }
-            
-            // if the flash timer has expired, clear the dead rows, reset flags
-            if (doneFlash)
+            else
             {
-                int rows = rowsToClear.Count;
-                if (rows == 1) score += 40 * level + softDropCount;
-                else if (rows == 2) score += 100 * level + softDropCount;
-                else if (rows == 3) score += 300 * level + softDropCount;
-                else if (rows == 4) score += 1200 * level + softDropCount;
-                linesCleared += rows;
-                
-                ClearRows(rowsToClear);
-                rowsToClear.Clear();
-                flashBegun = false;
-                doneFlash = false;
+                MouseState mouse = Mouse.GetState();
+                beginButton.Update(mouse);
+                if (beginButton.isClicked)
+                {
+                    gameStart = true;
+                    beginButton.deactivate();
+                }
             }
-
-            // change colour of blocks in dead rows
-            Flash(rowsToClear);
-
-            // check to see if flash has begun.  If it has, check to see if flash
-            // duration has expired.  If it has, declare it done.
-            if (flashBegun && gameTime.TotalGameTime.Subtract(startFlash) > flashDuration)
-            {
-                doneFlash = true;
-            }
-            getNext();
-            
 
             base.Update(gameTime);
         }
@@ -271,11 +319,16 @@ namespace Tetris
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
             spriteBatch.Begin();
-            // draw current tetromino
-            foreach (Block b in activeBlockList)
+            if (!gameOver)
             {
-                b.Draw(spriteBatch);
+                // draw current tetromino
+                foreach (Block b in activeBlockList)
+                {
+                    b.Draw(spriteBatch);
+                }
             }
+            
+            
             // draw old blocks
             foreach (Block b in deadBlockList)
             {
@@ -286,6 +339,7 @@ namespace Tetris
             {
                 b.Draw(spriteBatch);
             }
+            
             // draw Next text
             Vector2 nSize = nextFont.MeasureString("NEXT");
             spriteBatch.DrawString(nextFont, "NEXT", new Vector2(BLOCK_SIZE * 10 + (100-nSize.X/2), 0), Color.Black);
@@ -306,7 +360,17 @@ namespace Tetris
             spriteBatch.DrawString(nextFont, "LEVEL", new Vector2(BLOCK_SIZE * 10 + (100 - lSize.X / 2), 300), Color.Black);
             Vector2 lcSize = nextFont.MeasureString(level.ToString());
             spriteBatch.DrawString(nextFont, level.ToString(), new Vector2(BLOCK_SIZE * 10 + (100 - lcSize.X / 2), 300 + 50), Color.Black);
-            
+
+            if (gameOver)
+            {
+                // draw restart button
+                restartButton.Draw(spriteBatch);
+            }
+            else if (!gameStart)
+            {
+                beginButton.Draw(spriteBatch);
+            }
+
             spriteBatch.End();
            
             
@@ -424,6 +488,26 @@ namespace Tetris
                     
             }
             //Console.WriteLine(nextBlockList[0].PositionX + " " + nextBlockList[0].PositionY);
+        }
+
+        public void EndGame()
+        {
+            gameOver = true;
+            restartButton.activate();
+        }
+
+        public void Restart()
+        {
+            dropTimer = 0;
+            softDropCount = 0;
+            level = 1;
+            score = 0;
+            linesCleared = 0;
+            dropspeed = 65 - level * 10;
+            deadBlockList = new List<Block>();
+            activeT = new Tetromino(this);
+            gameOver = false;
+            restartButton.deactivate();
         }
 
 

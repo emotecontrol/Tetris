@@ -7,3 +7,4 @@ C:\Users\Robert\Documents\Visual Studio 2013\Projects\Tetris\Tetris\Tetris\obj\x
 C:\Users\Robert\Documents\Visual Studio 2013\Projects\Tetris\Tetris\Tetris\bin\x86\Debug\Content\block.xnb
 C:\Users\Robert\Documents\Visual Studio 2013\Projects\Tetris\Tetris\Tetris\bin\x86\Debug\Content\next.xnb
 C:\Users\Robert\Documents\Visual Studio 2013\Projects\Tetris\Tetris\Tetris\bin\x86\Debug\Content\title.xnb
+C:\Users\Robert\Documents\Visual Studio 2013\Projects\Tetris\Tetris\Tetris\bin\x86\Debug\Content\button.xnb
